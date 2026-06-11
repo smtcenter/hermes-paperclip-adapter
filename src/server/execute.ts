@@ -67,7 +67,7 @@ function cfgStringArray(v: unknown): string[] | undefined {
 // Wake-up prompt builder
 // ---------------------------------------------------------------------------
 
-const DEFAULT_PROMPT_TEMPLATE = `You are "{{agentName}}", an AI agent employee in a Paperclip-managed company.
+export const DEFAULT_PROMPT_TEMPLATE = `You are "{{agentName}}", an AI agent employee in a Paperclip-managed company.
 
 IMPORTANT: Use \`terminal\` tool with \`curl\` for ALL Paperclip API calls (web_extract and browser cannot access localhost).
 
@@ -123,7 +123,7 @@ Address the comment, POST a reply if needed, then continue working.
 4. If truly nothing to do, report briefly what you checked.
 {{/noTask}}`;
 
-function buildPrompt(
+export function buildPrompt(
   ctx: AdapterExecutionContext,
   config: Record<string, unknown>,
 ): string {
@@ -192,8 +192,8 @@ function buildPrompt(
 // Output parsing
 // ---------------------------------------------------------------------------
 
-/** Regex to extract session ID from Hermes quiet-mode output: "session_id: <id>" */
-const SESSION_ID_REGEX = /^session_id:\s*(\S+)/m;
+/** Regex to extract session ID from Hermes quiet-mode output: "session_id: <id>" at the END of the output */
+const SESSION_ID_REGEX = /^session_id:\s*(\S+)\s*$/m;
 
 /** Regex for legacy session output format */
 const SESSION_ID_REGEX_LEGACY = /session[_ ](?:id|saved)[:\s]+([a-zA-Z0-9_-]+)/i;
@@ -205,7 +205,7 @@ const TOKEN_USAGE_REGEX =
 /** Regex to extract cost from Hermes output. */
 const COST_REGEX = /(?:cost|spent)[:\s]*\$?([\d.]+)/i;
 
-interface ParsedOutput {
+export interface ParsedOutput {
   sessionId?: string;
   response?: string;
   usage?: UsageSummary;
@@ -246,7 +246,7 @@ function cleanResponse(raw: string): string {
 // Output parsing
 // ---------------------------------------------------------------------------
 
-function parseHermesOutput(stdout: string, stderr: string): ParsedOutput {
+export function parseHermesOutput(stdout: string, stderr: string): ParsedOutput {
   const combined = stdout + "\n" + stderr;
   const result: ParsedOutput = {};
 
@@ -254,17 +254,24 @@ function parseHermesOutput(stdout: string, stderr: string): ParsedOutput {
   //   <response text>
   //
   //   session_id: <id>
+  // 
+  // The session_id line should be at the very end of stdout (after the response).
   const sessionMatch = stdout.match(SESSION_ID_REGEX);
   if (sessionMatch?.[1]) {
     result.sessionId = sessionMatch?.[1] ?? null;
     // The response is everything before the session_id line
     const sessionLineIdx = stdout.lastIndexOf("\nsession_id:");
-    if (sessionLineIdx > 0) {
+    if (sessionLineIdx >= 0) {
       result.response = cleanResponse(stdout.slice(0, sessionLineIdx));
     }
   } else {
-    // Legacy format (non-quiet mode)
-    const legacyMatch = combined.match(SESSION_ID_REGEX_LEGACY);
+    // Legacy format (non-quiet mode) — only look for structured patterns
+    // that are clearly intentional session IDs, not just any mention of "session_id"
+    // Look for patterns like:
+    //   session_id: abc123
+    //   session saved: abc123
+    //   session[_]id[:\s]+ but NOT "session ID format" or other prose
+    const legacyMatch = combined.match(/\n(?:session[_](?:id|saved)|Session[_]ID)[:\s]+([a-zA-Z0-9_-]{6,})/i);
     if (legacyMatch?.[1]) {
       result.sessionId = legacyMatch?.[1] ?? null;
     }
