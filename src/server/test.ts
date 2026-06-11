@@ -143,7 +143,7 @@ function checkApiKeys(
   }
 
   const has = (key: string): boolean =>
-    !!(resolvedEnv[key] ?? process.env[key]);
+    Boolean(resolvedEnv[key] ?? process.env[key]);
 
   const hasAnthropic = has("ANTHROPIC_API_KEY");
   const hasOpenRouter = has("OPENROUTER_API_KEY");
@@ -243,7 +243,7 @@ async function checkProviderConsistency(
 export async function testEnvironment(
   ctx: AdapterEnvironmentTestContext,
 ): Promise<AdapterEnvironmentTestResult> {
-  const config = (ctx.config ?? {}) as Record<string, unknown>;
+  const config = (ctx.config ?? {});
   const command = asString(config.hermesCommand) || HERMES_CLI;
   const checks: AdapterEnvironmentCheck[] = [];
 

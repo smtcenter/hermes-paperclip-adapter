@@ -59,7 +59,7 @@ function cfgBoolean(v: unknown): boolean | undefined {
 }
 function cfgStringArray(v: unknown): string[] | undefined {
   return Array.isArray(v) && v.every((i) => typeof i === "string")
-    ? (v as string[])
+    ? (v)
     : undefined;
 }
 
@@ -319,7 +319,7 @@ export function parseHermesOutput(stdout: string, stderr: string): ParsedOutput 
 export async function execute(
   ctx: AdapterExecutionContext,
 ): Promise<AdapterExecutionResult> {
-  const config = (ctx.config ?? ctx.agent?.adapterConfig ?? {}) as Record<string, unknown>;
+  const config = (ctx.config ?? ctx.agent?.adapterConfig ?? {});
 
   // ── Resolve configuration ──────────────────────────────────────────────
   const hermesCmd = cfgString(config.hermesCommand) || HERMES_CLI;
@@ -405,7 +405,7 @@ export async function execute(
 
   // Session resume
   const prevSessionId = cfgString(
-    (ctx.runtime?.sessionParams as Record<string, unknown> | null)?.sessionId,
+    (ctx.runtime?.sessionParams)?.sessionId,
   );
   if (persistSession && prevSessionId) {
     args.push("--resume", prevSessionId);

@@ -69,7 +69,7 @@ function parseToolCompletionLine(
   const duration = durationMatch ? durationMatch[1] : "";
 
   // Remove duration from the end to get verb + detail
-  let verbAndDetail = durationMatch
+  const verbAndDetail = durationMatch
     ? cleaned.slice(0, cleaned.lastIndexOf(durationMatch[0])).trim()
     : cleaned;
 
