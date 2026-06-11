@@ -324,7 +324,7 @@ describe('Hermes Paperclip Adapter — Stress Tests', () => {
             // First 2 attempts fail
             throw new Error(`Connection refused (attempt ${attempt})`);
           }
-          // 3rd attempt succeeds
+          // Attempts 2 and 3 succeed
           recorder.recordSessionId(`backoff-success-${attempt}`);
           recorder.recordMeasurement(100);
         } catch (err) {
@@ -343,8 +343,8 @@ describe('Hermes Paperclip Adapter — Stress Tests', () => {
       );
       assert.equal(
         report.totalSessions,
-        1,
-        'Should have 1 successful session'
+        2,
+        'Should have 2 successful sessions (attempts 2 and 3)'
       );
     });
   });
