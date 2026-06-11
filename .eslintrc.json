@@ -26,7 +26,6 @@
       "error",
       "always"
     ],
-    "@typescript-eslint/explicit-function-return-types": "warn",
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/no-misused-promises": "error",
@@ -41,5 +40,20 @@
     ],
     "@typescript-eslint/require-await": "warn",
     "@typescript-eslint/await-thenable": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "*.test.ts",
+        "*.stress.test.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-floating-promises": "warn",
+        "@typescript-eslint/no-unsafe-assignment": "warn",
+        "@typescript-eslint/no-unsafe-member-access": "warn",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "no-inner-declarations": "off"
+      }
+    }
+  ]
 }
