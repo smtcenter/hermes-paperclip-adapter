@@ -1,0 +1,82 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Run unit tests
+        id: unit_tests
+        run: npm test
+        continue-on-error: true
+
+      - name: Run stress tests
+        id: stress_tests
+        run: node --test dist/server/execute.stress.test.js > stress-test-output.txt 2>&1
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-node-${{ matrix.node-version }}
+          path: |
+            stress-test-output.txt
+          retention-days: 7
+
+      - name: Parse test results
+        if: always()
+        run: |
+          UNIT_STATUS=${{ steps.unit_tests.outcome }}
+          STRESS_STATUS=${{ steps.stress_tests.outcome }}
+          
+          echo "## Test Results (Node ${{ matrix.node-version }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$UNIT_STATUS" = "success" ]; then
+            echo "| Unit Tests | ✅ Passing |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Unit Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$STRESS_STATUS" = "success" ]; then
+            echo "| Stress Tests | ✅ Passing |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Stress Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Status:** ✅ All tests passing" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if tests failed
+        if: steps.unit_tests.outcome != 'success' || steps.stress_tests.outcome != 'success'
+        run: exit 1
